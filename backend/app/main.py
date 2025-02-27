@@ -1,3 +1,5 @@
+import uvicorn
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -30,3 +32,8 @@ app.include_router(api_router)
 @app.get("/")
 def read_root():
     return {"message": "Bem-vindo à API da Plataforma de Cursos!"}
+
+# Se executar diretamente este arquivo
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=False)
