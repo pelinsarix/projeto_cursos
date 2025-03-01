@@ -1,121 +1,86 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams } from "react-router-dom"
-import {
-  CourseContainer,
-  CourseHeader,
-  CourseTitle,
-  CourseDescription,
-  CourseImage,
-  CourseInfo,
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useCursoContext } from '../../contexts/CursoContext';
+import ContentViewer from '../../components/ContentViewer';
+import Sidebar from '../../components/Sidebar';
+import CourseCompletion from '../../components/CourseCompletion';
+import { 
+  CourseContainer, 
+  ContentWrapper, 
   LoadingContainer,
-  NoContentMessage,
-} from "./styles"
-import ContentDisplay from "../../components/ContentDisplay"
-import api from "../../services/api"
-import { Loader } from "react-feather"
+  NoContentMessage
+} from './styles';
+import { Loader } from 'react-feather';
 
 const CourseContentPage = () => {
-  const { cursoId, conteudoId } = useParams()
-  const [curso, setCurso] = useState(null)
-  const [conteudos, setConteudos] = useState([])
-  const [currentConteudo, setCurrentConteudo] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  // Buscar detalhes do curso e lista de conteúdos
+  const { cursoId, conteudoId } = useParams();
+  const navigate = useNavigate();
+  const { 
+    setCursoId, 
+    loading, 
+    currentCurso, 
+    conteudos,
+    showCourseCompletion,
+    setShowCourseCompletion
+  } = useCursoContext();
+  
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Efeito para carregar o curso
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        
-        // Buscar detalhes do curso
-        const cursoResponse = await api.get(`/cursos/${cursoId}`)
-        setCurso(cursoResponse.data)
-
-        // Buscar lista de conteúdos do curso
-        const conteudosResponse = await api.get(`conteudos/curso/${cursoId}`)
-        const sortedConteudos = conteudosResponse.data.sort((a, b) => a.ordem - b.ordem)
-        setConteudos(sortedConteudos)
-        
-        setLoading(false)
-      } catch (error) {
-        console.error("Erro ao buscar dados do curso:", error)
-        setLoading(false)
-      }
+    if (cursoId) {
+      setCursoId(parseInt(cursoId, 10));
     }
-
-    fetchData()
-  }, [cursoId])
-
-  // Buscar conteúdo específico ou usar o primeiro da lista
+  }, [cursoId, setCursoId]);
+  
+  // Efeito para verificar se o conteúdo existe e navegar para o primeiro conteúdo caso necessário
   useEffect(() => {
-    const fetchConteudo = async () => {
-      try {
-        if (conteudoId) {
-          // Se tiver ID de conteúdo, busca diretamente pela API
-          const conteudoResponse = await api.get(`/conteudos/${conteudoId}`)
-          setCurrentConteudo(conteudoResponse.data)
-        } else if (conteudos.length > 0) {
-          // Se não tiver ID específico, usa o primeiro da lista
-          setCurrentConteudo(conteudos[0])
-        } else {
-          setCurrentConteudo(null)
-        }
-      } catch (error) {
-        console.error("Erro ao buscar conteúdo:", error)
-        setCurrentConteudo(null)
-      }
+    // Somente execute essa navegação quando os conteúdos estiverem carregados
+    if (!loading && conteudos && conteudos.length > 0 && !conteudoId) {
+      // Navegue para o primeiro conteúdo do curso
+      navigate(`/curso/${cursoId}/conteudo/${conteudos[0].id}`, { replace: true });
     }
-
-    fetchConteudo()
-  }, [conteudoId, conteudos])
-
-  if (loading) {
-    return (
-      <LoadingContainer>
-        <Loader size={32} className="spinner" />
-        <p>Carregando conteúdo...</p>
-      </LoadingContainer>
-    )
-  }
-
-  if (!curso) {
-    return (
-      <NoContentMessage>
-        <p>Curso não encontrado.</p>
-      </NoContentMessage>
-    )
-  }
+  }, [loading, conteudos, cursoId, conteudoId, navigate]);
+  
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   return (
-    <CourseContainer>
-      <CourseHeader>
-        <CourseInfo>
-          <CourseTitle>{curso.titulo}</CourseTitle>
-          <CourseDescription>{curso.descricao}</CourseDescription>
-        </CourseInfo>
-        <CourseImage>
-          <img src={curso.imagem_url || "/placeholder.svg?height=200&width=300"} alt={curso.titulo} />
-        </CourseImage>
-      </CourseHeader>
+    <div className="course-layout">
+      <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+      
+      <div className={`main-content ${sidebarOpen ? 'with-sidebar' : ''}`}>
+        {loading ? (
+          <LoadingContainer>
+            <Loader className="spinner" size={32} />
+            <p>Carregando conteúdo...</p>
+          </LoadingContainer>
+        ) : !conteudoId ? (
+          <NoContentMessage>
+            <h2>Nenhum conteúdo selecionado</h2>
+            <p>Selecione um conteúdo na barra lateral para começar a aprender.</p>
+          </NoContentMessage>
+        ) : (
+          <CourseContainer>
+            <ContentWrapper>
+              <ContentViewer conteudoId={parseInt(conteudoId, 10)} />
+            </ContentWrapper>
+          </CourseContainer>
+        )}
+      </div>
+      
+      {/* Modal de celebração ao concluir o curso */}
+      <CourseCompletion 
+        isOpen={showCourseCompletion}
+        onClose={() => setShowCourseCompletion(false)}
+        course={currentCurso}
+      />
+    </div>
+  );
+};
 
-      {conteudos.length > 0 ? (
-        conteudos.map((conteudo) => (
-          <ContentDisplay
-            key={conteudo.id}
-            conteudo={conteudo}
-            isActive={conteudo.id === currentConteudo?.id}
-          />
-        ))
-      ) : (
-        <NoContentMessage>
-          <p>Este curso ainda não possui conteúdos disponíveis.</p>
-        </NoContentMessage>
-      )}
-    </CourseContainer>
-  )
-}
-
-export default CourseContentPage
+export default CourseContentPage;
 

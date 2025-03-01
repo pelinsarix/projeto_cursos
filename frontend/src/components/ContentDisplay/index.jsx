@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   ContentContainer,
   ContentHeader,
@@ -6,10 +7,12 @@ import {
   ContentBody,
   VideoContainer,
   TextContent,
-} from "./styles"
-import { Video, FileText } from "react-feather"
+} from "./styles";
+import { Video, FileText } from "react-feather";
 
 const ContentDisplay = ({ conteudo }) => {
+  useEffect(() => {}, [conteudo]);
+
   if (!conteudo) {
     return (
       <ContentContainer>
@@ -20,20 +23,21 @@ const ContentDisplay = ({ conteudo }) => {
           <p>Escolha um conteúdo na barra lateral para visualizá-lo.</p>
         </ContentBody>
       </ContentContainer>
-    )
+    );
   }
 
   // Função para extrair o ID do vídeo do YouTube
   const getYouTubeVideoId = (url) => {
-    if (!url) return null
+    if (!url) return null;
 
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
-    const match = url.match(regExp)
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    const videoId = match && match[2].length === 11 ? match[2] : null;
 
-    return match && match[2].length === 11 ? match[2] : null
-  }
+    return videoId;
+  };
 
-  const videoId = getYouTubeVideoId(conteudo.video_url)
+  const videoId = getYouTubeVideoId(conteudo.video_url);
 
   return (
     <ContentContainer>
@@ -70,8 +74,8 @@ const ContentDisplay = ({ conteudo }) => {
         {conteudo.texto && <TextContent>{conteudo.texto}</TextContent>}
       </ContentBody>
     </ContentContainer>
-  )
-}
+  );
+};
 
-export default ContentDisplay
+export default ContentDisplay;
 

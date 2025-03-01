@@ -1,53 +1,51 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { HomeContainer, HomeHeader, HomeTitle, CourseGrid, LoadingContainer } from "./styles"
-import CourseCard from "../../components/CourseCard"
-import api from "../../services/api"
-import { Loader } from "react-feather"
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useCursoContext } from "../../contexts/CursoContext";
+import { HomeContainer, Title, CourseGrid, CourseCard } from "./styles";
 
 const HomePage = () => {
-  const [cursos, setCursos] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { cursos, loading } = useCursoContext();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchCursos = async () => {
-      try {
-        const response = await api.get("/cursos")
-        setCursos(response.data)
-        setLoading(false)
-      } catch (error) {
-        console.error("Erro ao buscar cursos:", error)
-        setLoading(false)
-      }
-    }
-
-    fetchCursos()
-  }, [])
+  const handleCourseClick = (cursoId) => {
+    navigate(`/curso/${cursoId}`);
+  };
 
   if (loading) {
     return (
-      <LoadingContainer>
-        <Loader size={32} className="spinner" />
-        <p>Carregando cursos...</p>
-      </LoadingContainer>
-    )
+      <HomeContainer>
+        <Title>Carregando cursos...</Title>
+      </HomeContainer>
+    );
   }
 
   return (
     <HomeContainer>
-      <HomeHeader>
-        <HomeTitle>Cursos Disponíveis</HomeTitle>
-      </HomeHeader>
+      <Title>Bem-vindo à Plataforma de Cursos</Title>
+      <p>Selecione um curso para começar:</p>
 
       <CourseGrid>
-        {cursos.map((curso) => (
-          <CourseCard key={curso.id} curso={curso} />
+        {cursos.map(curso => (
+          <CourseCard key={curso.id} onClick={() => handleCourseClick(curso.id)}>
+            <div className="course-image">
+              {curso.imagem_url ? (
+                <img src={curso.imagem_url} alt={curso.titulo} />
+              ) : (
+                <div className="placeholder-image">{curso.titulo.charAt(0)}</div>
+              )}
+            </div>
+            <div className="course-details">
+              <h3>{curso.titulo}</h3>
+              <p>{curso.descricao}</p>
+            </div>
+          </CourseCard>
         ))}
       </CourseGrid>
     </HomeContainer>
-  )
-}
+  );
+};
 
-export default HomePage
+export default HomePage;
 
